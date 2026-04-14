@@ -1,9 +1,8 @@
-const CACHE_NAME = 'alfaclass-v1';
+const CACHE_NAME = 'alfaclass-v2';
 const DYNAMIC_CACHE = 'alfaclass-images-v1';
 const urlsToCache = [
   './',
   './index.html',
-  './صور/شعار التطبيق.png',
   './صور/ألفاكلاس.png'
 ];
 
