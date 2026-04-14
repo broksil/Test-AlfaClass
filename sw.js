@@ -31,13 +31,21 @@ self.addEventListener('fetch', event => {
             cache.put(req, fetchRes.clone()); // حفظ نسخة من الصورة الجديدة في الكاش
             return fetchRes;
           });
+        }).catch(() => {
+          // إرجاع صورة فارغة بدلاً من إحداث خطأ TypeError في المتصفح
+          return new Response(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+            { headers: { 'Content-Type': 'image/svg+xml' } }
+          );
         });
       })
     );
   } else {
     // التعامل مع باقي الملفات الأساسية
     event.respondWith(
-      caches.match(req).then(response => response || fetch(req))
+      caches.match(req).then(response => {
+        return response || fetch(req).catch(() => new Response('Offline', { status: 503 }));
+      })
     );
   }
 });

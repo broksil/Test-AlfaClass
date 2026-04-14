@@ -393,9 +393,29 @@
   .post-type-badge[data-type="واجب"] { color: var(--c-hw); background: rgba(34,197,94,0.12); }
   .post-type-badge[data-type="تحضير"] { color: var(--c-prep); background: rgba(168,85,247,0.12); }
 
+  .offline-badge {
+    float: left;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 7px;
+    font-size: 10px; font-weight: 700;
+    background: rgba(245, 158, 11, 0.15); color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    animation: pulseOpacity 1.5s infinite;
+  }
+  @keyframes pulseOpacity { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
   .post-subject { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
   .post-note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; word-break: break-word; }
   .post-note a.link { color: #60a5fa; text-decoration: underline; }
+  .youtube-embed { 
+    width: 100%; 
+    aspect-ratio: 16 / 9; 
+    border-radius: 12px; 
+    margin-top: 10px; 
+    border: 1px solid rgba(255,255,255,0.08); 
+    background: #000; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+  }
 
   .post-media { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .media-thumb {
@@ -789,6 +809,7 @@
           <div id="user-role">—</div>
         </div>
         <button class="btn-logout" id="btn-logout">خروج</button>
+      </div>
     </div>
   </header>
 
@@ -1035,7 +1056,10 @@ let unsubPosts = null;
 let unsubViewsList = [];
 let seenPostIds = new Set(JSON.parse(localStorage.getItem('seenPosts') || '[]'));
 let currentPosts = {};
+let localOfflinePosts = [];
+let editingMediaUrls = [];
 const notifSound = new Audio('https://actions.google.com/sounds/v1/ui/pop.ogg');
+const syncSound = new Audio('https://actions.google.com/sounds/v1/cartoon/magic_chime_02.ogg');
 
 // ── HELPERS ──
 function getWeekDays(offset = 0) {
@@ -1090,8 +1114,14 @@ function formatNote(text) {
   let safe = sanitizeText(text);
   // hidden link: (url)(label)
   safe = safe.replace(/\((https?:\/\/[^)]+)\)\(([^)]+)\)/g, '<a href="$1" target="_blank" rel="noopener" class="link">$2</a>');
-  // plain url
-  safe = safe.replace(/(^|[^"'])(https?:\/\/[^\s<"')]+)/g, '$1<a href="$2" target="_blank" rel="noopener" class="link">$2</a>');
+  // plain url & YouTube embed
+  safe = safe.replace(/(^|[^"'])(https?:\/\/[^\s<"')]+)/g, (match, prefix, url) => {
+    const ytMatch = url.match(/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return `${prefix}<iframe class="youtube-embed" src="https://www.youtube.com/embed/${ytMatch[1]}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>`;
+    }
+    return `${prefix}<a href="${url}" target="_blank" rel="noopener" class="link">${url}</a>`;
+  });
   return safe;
 }
 
@@ -1357,7 +1387,12 @@ function subscribeToData(dayIds) {
     // ترتيب البيانات محلياً لتجنب الحاجة لفهرس (Index) معقد في فايربيس
     const allFetchedPosts = [];
     snap.forEach(d => allFetchedPosts.push({ ...d.data(), id: d.id }));
-    allFetchedPosts.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+    
+    allFetchedPosts.sort((a, b) => {
+      const tA = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || Number(a.createdAt) || 0;
+      const tB = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || Number(b.createdAt) || 0;
+      return tA - tB;
+    });
 
     allFetchedPosts.forEach(data => {
       if (data.dayId && postsByDay[data.dayId] !== undefined) {
@@ -1366,7 +1401,11 @@ function subscribeToData(dayIds) {
     });
 
     currentPosts = postsByDay;
-    dayIds.forEach(id => renderPostsForDay(id, postsByDay[id] || []));
+    dayIds.forEach(id => {
+      const fPosts = postsByDay[id] || [];
+      const oPosts = localOfflinePosts.filter(p => p.dayId === id).map(p => ({...p, isOffline: true}));
+      renderPostsForDay(id, [...fPosts, ...oPosts]);
+    });
   });
 
   // Subscribe to views
@@ -1439,12 +1478,13 @@ function renderPostsForDay(dayId, posts) {
     const authorIconHTML = postIcon ? `<img src="${postIcon}" class="author-badge" alt="شعار">` : '';
     const adminActions = currentUser?.isAdmin ? `
       <div class="post-actions">
-        <button class="btn-edit" onclick="openEditModal('${post.id}')">✏️ تعديل</button>
-        <button class="btn-delete" onclick="deletePost('${post.id}', ${JSON.stringify(post.mediaUrls || []).replace(/"/g,'&quot;')})">🗑️ حذف</button>
+        ${!post.isOffline ? `<button class="btn-edit" onclick="openEditModal('${post.id}')">✏️ تعديل</button>` : ''}
+        <button class="btn-delete" onclick="${post.isOffline ? `deleteOfflinePostHandler(${post.id})` : `deletePost('${post.id}', ${JSON.stringify(post.mediaUrls || []).replace(/"/g,'&quot;')})`}">🗑️ حذف</button>
       </div>` : '';
 
     item.innerHTML = `
       <span class="post-type-badge" data-type="${sanitizeText(post.type || '')}">${sanitizeText(post.type || '')}</span>
+      ${post.isOffline ? '<span class="offline-badge" title="بانتظار توفر الإنترنت للرفع">⏳ قيد الانتظار</span>' : ''}
       <div class="post-subject">${sanitizeText(post.subject || '')}</div>
       ${noteHTML}
       ${mediaHTML}
@@ -1456,6 +1496,25 @@ function renderPostsForDay(dayId, posts) {
 }
 
 function buildMediaHTML(post) {
+  // عرض معاينة للصور في المنشورات المخزنة محلياً (بدون نت)
+  if (post.isOffline && post.files && post.files.length > 0) {
+    let html = '<div class="post-media">';
+    const imgUrls = post.files.filter(f => f.type && f.type.startsWith('image/')).map(f => URL.createObjectURL(f));
+    let imgIndex = 0;
+    post.files.forEach(file => {
+      if (file.type && file.type.startsWith('image/')) {
+        const url = imgUrls[imgIndex];
+        const safeUrls = JSON.stringify(imgUrls).replace(/"/g, '&quot;');
+        html += `<img class="media-thumb" src="${url}" loading="lazy" onclick="openLightbox(${safeUrls}, ${imgIndex})" alt="صورة">`;
+        imgIndex++;
+      } else {
+        html += `<span class="media-file-link" style="cursor:default">📎 ${sanitizeText(file.name || 'ملف')}</span>`;
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
   const urls = post.mediaUrls || [];
   if (!urls.length) return '';
   let html = '<div class="post-media">';
@@ -1591,6 +1650,7 @@ window.openPublishModal = function(dayId) {
   document.getElementById('subject-custom-wrap').classList.add('hidden');
   document.getElementById('prev-images').innerHTML = '';
   pendingFiles = { images:[] };
+  editingMediaUrls = [];
   clearUploadStatus();
   loadDraft();
   openModal('publish-modal');
@@ -1606,6 +1666,7 @@ window.openEditModal = function(postId) {
   });
   if (!post) return;
 
+  editingMediaUrls = post.mediaUrls || [];
   document.getElementById('pub-day-id').value = post.dayId;
   document.getElementById('pub-edit-id').value = postId;
   document.getElementById('publish-modal-title').textContent = '✏️ تعديل منشور';
@@ -1627,6 +1688,138 @@ window.openEditModal = function(postId) {
   openModal('publish-modal');
 };
 
+// ── OFFLINE QUEUE (IndexedDB) ──
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('AlfaClassOfflineDB', 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore('offlinePosts', { keyPath: 'id', autoIncrement: true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function saveOfflinePost(postData) {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('offlinePosts', 'readwrite');
+    tx.objectStore('offlinePosts').add(postData);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function getOfflinePosts() {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('offlinePosts', 'readonly');
+    const req = tx.objectStore('offlinePosts').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function deleteOfflinePost(id) {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('offlinePosts', 'readwrite');
+    tx.objectStore('offlinePosts').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function refreshOfflinePosts() {
+  try {
+    localOfflinePosts = await getOfflinePosts();
+    const dayIds = getWeekDays(weekOffset).map(d=>d.id);
+    dayIds.forEach(id => {
+      const fPosts = currentPosts[id] || [];
+      const oPosts = localOfflinePosts.filter(p => p.dayId === id).map(p => ({...p, isOffline: true}));
+      renderPostsForDay(id, [...fPosts, ...oPosts]);
+    });
+  } catch(e) { console.error('Failed to load offline posts', e); }
+}
+
+window.deleteOfflinePostHandler = async function(id) {
+  if (!confirm('هل تريد حذف هذا المنشور المعلق؟')) return;
+  await deleteOfflinePost(id);
+  refreshOfflinePosts();
+  showToast('🗑️', 'حذف', 'تم حذف المنشور المعلق');
+};
+
+async function processPublish(data, isBackgroundSync = false) {
+  const { type, subject, note, dayId, editId, files, author, authorColor, authorIcon, createdAt } = data;
+  
+  const mediaUrls = [...(data.existingMediaUrls || [])];
+  if (files && files.length > 0) {
+    if (!isBackgroundSync) document.getElementById('upload-progress-bar').classList.add('show');
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!isBackgroundSync) setUploadStatus(`⬆️ جارٍ رفع: ${file.name}`);
+      const url = await uploadToCloudinary(file);
+      mediaUrls.push({ url, type: 'image', name: file.name, publicId: extractPublicId(url) });
+      if (!isBackgroundSync) {
+        const pct = Math.round(((i+1)/files.length)*100);
+        document.getElementById('upload-progress-fill').style.width = pct + '%';
+      }
+    }
+    if (!isBackgroundSync) {
+      document.getElementById('upload-progress-bar').classList.remove('show');
+      document.getElementById('upload-progress-fill').style.width = '0';
+    }
+  }
+
+  const postData = {
+    type, subject, note, dayId,
+    mediaUrls,
+    author, authorColor, authorIcon,
+    createdAt: new Date(createdAt)
+  };
+
+  if (editId) {
+    await updateDoc(doc(db, 'posts', editId), postData);
+    if (!isBackgroundSync) showToast('✅','تعديل','تم تعديل المنشور بنجاح');
+  } else {
+    await addDoc(collection(db, 'posts'), postData);
+    if (!isBackgroundSync) {
+      showToast('✅','نشر','تم نشر التحضير بنجاح');
+      clearDraft();
+    }
+  }
+}
+
+async function syncOfflinePosts() {
+  const offlinePosts = await getOfflinePosts();
+  if (offlinePosts.length === 0) return;
+
+  showToast('🔄', 'مزامنة', 'جارٍ نشر المنشورات المحفوظة أثناء انقطاع الإنترنت...');
+  let successCount = 0;
+  
+  for (const post of offlinePosts) {
+    try {
+      await processPublish(post, true);
+      await deleteOfflinePost(post.id);
+      showToast('✅', 'نشر تلقائي', `تم نشر: ${post.type} - ${post.subject}`);
+      successCount++;
+    } catch (err) {
+      console.error('Failed to sync offline post', err);
+      showToast('❌', 'خطأ مزامنة', `فشل نشر: ${post.type}`);
+    }
+  }
+  
+  if (successCount > 0) {
+    playSyncSound();
+  }
+  refreshOfflinePosts();
+}
+
+window.addEventListener('online', syncOfflinePosts);
+if (navigator.onLine) {
+  setTimeout(syncOfflinePosts, 3000); // محاولة المزامنة عند فتح التطبيق
+}
+
 document.getElementById('btn-do-publish').addEventListener('click', async () => {
   const btn = document.getElementById('btn-do-publish');
   const dayId = document.getElementById('pub-day-id').value;
@@ -1640,47 +1833,32 @@ document.getElementById('btn-do-publish').addEventListener('click', async () => 
 
   if (!type || !subject) { showToast('⚠️','خطأ','أكمل الحقول المطلوبة'); return; }
 
+  // تجهيز البيانات
+  const allFiles = [...pendingFiles.images];
+  const dataPayload = {
+    type, subject, note, dayId, editId, files: allFiles,
+    existingMediaUrls: editingMediaUrls,
+    author: currentUser.name,
+    authorColor: currentUser.color,
+    authorIcon: currentUser.icon || '',
+    createdAt: Date.now()
+  };
+
+  // إذا لم يكن هناك إنترنت، نحفظ محلياً ونغلق النافذة
+  if (!navigator.onLine) {
+    await saveOfflinePost(dataPayload);
+    showToast('📡', 'وضع عدم الاتصال', 'تم حفظ المنشور وسيتم نشره تلقائياً عند عودة الإنترنت.');
+    closeModal('publish-modal');
+    clearDraft();
+    refreshOfflinePosts();
+    return;
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
 
   try {
-    // Upload files
-    const allFiles = [
-      ...pendingFiles.images.map(f => ({file:f, type:'image'}))
-    ];
-    const mediaUrls = [];
-
-    if (allFiles.length > 0) {
-      document.getElementById('upload-progress-bar').classList.add('show');
-      for (let i = 0; i < allFiles.length; i++) {
-        const {file, type: ftype} = allFiles[i];
-        setUploadStatus(`⬆️ جارٍ رفع: ${file.name}`);
-        const url = await uploadToCloudinary(file);
-        mediaUrls.push({ url, type: ftype, name: file.name, publicId: extractPublicId(url) });
-        const pct = Math.round(((i+1)/allFiles.length)*100);
-        document.getElementById('upload-progress-fill').style.width = pct + '%';
-      }
-      document.getElementById('upload-progress-bar').classList.remove('show');
-      document.getElementById('upload-progress-fill').style.width = '0';
-    }
-
-    const postData = {
-      type, subject, note, dayId,
-      mediaUrls,
-      author: currentUser.name,
-      authorColor: currentUser.color,
-      authorIcon: currentUser.icon || '',
-      createdAt: new Date()
-    };
-
-    if (editId) {
-      await updateDoc(doc(db, 'posts', editId), postData);
-      showToast('✅','تعديل','تم تعديل المنشور بنجاح');
-    } else {
-      await addDoc(collection(db, 'posts'), postData);
-      showToast('✅','نشر','تم نشر التحضير بنجاح');
-      clearDraft();
-    }
+    await processPublish(dataPayload, false);
     closeModal('publish-modal');
   } catch (e) {
     console.error(e);
@@ -1802,6 +1980,11 @@ function clearUploadStatus() {
 function playNotifSound() {
   notifSound.currentTime = 0;
   notifSound.play().catch(e => console.warn('منع المتصفح تشغيل الصوت تلقائياً بسبب سياسة التفاعل'));
+}
+
+function playSyncSound() {
+  syncSound.currentTime = 0;
+  syncSound.play().catch(e => console.warn('منع المتصفح تشغيل الصوت تلقائياً بسبب سياسة التفاعل'));
 }
 
 // ── NOTIFICATIONS ──
@@ -2106,6 +2289,7 @@ function init() {
   scheduleMidnightCleanup();
   autoDeleteExpiredPosts();
   requestNotifPermission();
+  refreshOfflinePosts();
 }
 
 init();
