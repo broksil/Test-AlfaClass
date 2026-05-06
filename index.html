@@ -959,18 +959,6 @@
   </div>
 </div>
 
-<!-- ── NOTIFICATION PROMPT MODAL ── -->
-<div class="modal-overlay" id="notif-prompt-modal" onclick="handleModalOverlayClick(event,'notif-prompt-modal')">
-  <div class="modal-box" id="notif-prompt-box">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🔔 تفعيل الإشعارات</div>
-    <div style="text-align:center; color:var(--text-secondary); font-size:14px; margin-bottom:20px; line-height: 1.6;">
-      يرجى تفعيل الإشعارات لتصلك تنبيهات فورية عند إضافة تحضير، واجب، أو كويز جديد.
-    </div>
-    <button class="btn-submit" id="btn-enable-notif">✅ السماح بالإشعارات</button>
-    <button class="btn-submit" style="background:rgba(255,255,255,0.06);box-shadow:none;margin-top:8px;color:var(--text-secondary)" onclick="closeModal('notif-prompt-modal')">ربما لاحقاً</button>
-  </div>
-</div>
 
 <!-- iOS Install Prompt -->
 <div id="ios-install-prompt">
@@ -1002,6 +990,7 @@ import {
   getFirestore, collection, onSnapshot, addDoc, query, orderBy,
   updateDoc, doc, deleteDoc, where, getDocs, setDoc, increment, getDoc, enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
 // ── FIREBASE INIT ──
 const firebaseConfig = {
@@ -1013,6 +1002,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
 
 // ── ENABLE OFFLINE PERSISTENCE (IndexedDB) ──
 enableIndexedDbPersistence(db).catch((err) => {
@@ -1079,6 +1069,7 @@ let pendingFiles = { images: [] };
 let notifications = [];
 let notifCount = 0;
 let unsubPosts = null;
+let isPostsSubscribed = false;
 let unsubViewsList = [];
 let seenPostIds = new Set(JSON.parse(localStorage.getItem('seenPosts') || '[]'));
 let currentPosts = {};
@@ -1354,85 +1345,10 @@ function renderDays(anim = 'fade') {
 
 // ── FIREBASE SUBSCRIBE ──
 function subscribeToData(dayIds) {
-  if (unsubPosts) unsubPosts();
   unsubViewsList.forEach(unsub => unsub());
   unsubViewsList = [];
 
   if (dayIds.length === 0) return;
-
-  // استدعاء المنشورات للأيام المعروضة حالياً فقط لتسريع الاستجابة بشكل هائل
-  const q = query(collection(db, 'posts'), where('dayId', 'in', dayIds));
-  unsubPosts = onSnapshot(q, (snap) => {
-    const postsByDay = {};
-    dayIds.forEach(id => postsByDay[id] = []);
-
-    snap.docChanges().forEach(change => {
-      const data = change.doc.data();
-      const postId = change.doc.id;
-
-      if (change.type === 'added') {
-        if (!seenPostIds.has(postId)) {
-          seenPostIds.add(postId);
-          localStorage.setItem('seenPosts', JSON.stringify([...seenPostIds].slice(-200)));
-          
-          const age = Date.now() - (data.createdAt?.toMillis?.() || 0);
-          if (age < 5 * 60 * 1000) {
-            notifCount++;
-            const badge = document.getElementById('notif-badge');
-            badge.textContent = notifCount > 9 ? '9+' : notifCount;
-            badge.classList.add('show');
-            showToastNotif({ id: postId, text: `تم نشر ${data.type} - ${data.subject}`, dayId: data.dayId });
-            sendBrowserNotif({ ...data, id: postId });
-            playNotifSound();
-          }
-        }
-
-        // إضافة الإشعار للقائمة إذا لم يكن موجوداً مسبقاً
-        if (!notifications.find(n => n.id === postId)) {
-          notifications.push({
-            id: postId,
-            text: `تم نشر ${data.type} - ${data.subject}`,
-            dayId: data.dayId,
-            time: data.createdAt?.toMillis?.() || Date.now()
-          });
-        }
-      } else if (change.type === 'modified') {
-        const index = notifications.findIndex(n => n.id === postId);
-        if (index !== -1) {
-          notifications[index].text = `تم تعديل ${data.type} - ${data.subject}`;
-        }
-      } else if (change.type === 'removed') {
-        notifications = notifications.filter(n => n.id !== postId);
-      }
-    });
-
-    // ترتيب الإشعارات من الأحدث للأقدم وتحديث الواجهة
-    notifications.sort((a, b) => b.time - a.time);
-    renderNotifPanel();
-
-    // ترتيب البيانات محلياً لتجنب الحاجة لفهرس (Index) معقد في فايربيس
-    const allFetchedPosts = [];
-    snap.forEach(d => allFetchedPosts.push({ ...d.data(), id: d.id }));
-    
-    allFetchedPosts.sort((a, b) => {
-      const tA = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || Number(a.createdAt) || 0;
-      const tB = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || Number(b.createdAt) || 0;
-      return tA - tB;
-    });
-
-    allFetchedPosts.forEach(data => {
-      if (data.dayId && postsByDay[data.dayId] !== undefined) {
-        postsByDay[data.dayId].push(data);
-      }
-    });
-
-    currentPosts = postsByDay;
-    dayIds.forEach(id => {
-      const fPosts = postsByDay[id] || [];
-      const oPosts = localOfflinePosts.filter(p => p.dayId === id).map(p => ({...p, isOffline: true}));
-      renderPostsForDay(id, [...fPosts, ...oPosts]);
-    });
-  });
 
   // Subscribe to views
   dayIds.forEach(dayId => {
@@ -1455,6 +1371,93 @@ function subscribeToData(dayIds) {
     });
     unsubViewsList.push(unsub);
   });
+
+  if (!isPostsSubscribed) {
+    isPostsSubscribed = true;
+    const todayStr = formatDate(new Date());
+    // جلب جميع المنشورات الحالية والقادمة لكي تبقى الإشعارات ثابتة وتظهر للجميع
+    const q = query(collection(db, 'posts'), where('dayId', '>=', todayStr));
+    unsubPosts = onSnapshot(q, (snap) => {
+      const postsByDay = {};
+
+      snap.docChanges().forEach(change => {
+        const data = change.doc.data();
+        const postId = change.doc.id;
+
+        if (change.type === 'added') {
+          if (!seenPostIds.has(postId)) {
+            seenPostIds.add(postId);
+            localStorage.setItem('seenPosts', JSON.stringify([...seenPostIds].slice(-200)));
+            
+            const age = Date.now() - (data.createdAt?.toMillis?.() || 0);
+            if (age < 5 * 60 * 1000) {
+              notifCount++;
+              const badge = document.getElementById('notif-badge');
+              badge.textContent = notifCount > 9 ? '9+' : notifCount;
+              badge.classList.add('show');
+              showToastNotif({ id: postId, text: `تم نشر ${data.type} - ${data.subject}`, dayId: data.dayId });
+              playNotifSound();
+            }
+          }
+
+          // إضافة الإشعار للقائمة إذا لم يكن موجوداً مسبقاً
+          if (!notifications.find(n => n.id === postId)) {
+            notifications.push({
+              id: postId,
+              text: `تم نشر ${data.type} - ${data.subject}`,
+              dayId: data.dayId,
+              time: data.createdAt?.toMillis?.() || Date.now()
+            });
+          }
+        } else if (change.type === 'modified') {
+          const index = notifications.findIndex(n => n.id === postId);
+          if (index !== -1) {
+            notifications[index].text = `تم تعديل ${data.type} - ${data.subject}`;
+          }
+        } else if (change.type === 'removed') {
+          notifications = notifications.filter(n => n.id !== postId);
+        }
+      });
+
+      // ترتيب الإشعارات من الأحدث للأقدم وتحديث الواجهة
+      notifications.sort((a, b) => b.time - a.time);
+      renderNotifPanel();
+
+      // ترتيب البيانات محلياً لتجنب الحاجة لفهرس (Index) معقد في فايربيس
+      const allFetchedPosts = [];
+      snap.forEach(d => allFetchedPosts.push({ ...d.data(), id: d.id }));
+      
+      allFetchedPosts.sort((a, b) => {
+        const tA = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || Number(a.createdAt) || 0;
+        const tB = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || Number(b.createdAt) || 0;
+        return tA - tB;
+      });
+
+      allFetchedPosts.forEach(data => {
+        if (data.dayId) {
+          if (!postsByDay[data.dayId]) postsByDay[data.dayId] = [];
+          postsByDay[data.dayId].push(data);
+        }
+      });
+
+      currentPosts = postsByDay;
+      
+      // تحديث العرض للأيام المفتوحة حالياً فقط
+      const currentDayIds = getWeekDays(weekOffset).map(d => d.id);
+      currentDayIds.forEach(id => {
+        const fPosts = postsByDay[id] || [];
+        const oPosts = localOfflinePosts.filter(p => p.dayId === id).map(p => ({...p, isOffline: true}));
+        renderPostsForDay(id, [...fPosts, ...oPosts]);
+      });
+    });
+  } else {
+    // إذا كانت المنشورات محملة مسبقاً، فقط حدث عرض الأيام المطلوبة
+    dayIds.forEach(id => {
+      const fPosts = currentPosts[id] || [];
+      const oPosts = localOfflinePosts.filter(p => p.dayId === id).map(p => ({...p, isOffline: true}));
+      renderPostsForDay(id, [...fPosts, ...oPosts]);
+    });
+  }
 }
 
 function renderPostsForDay(dayId, posts) {
@@ -2031,9 +2034,11 @@ function showToastNotif(n) {
 }
 
 function formatDayName(dayId) {
-  const days = getWeekDays(0).concat(getWeekDays(1));
-  const d = days.find(d => d.id === dayId);
-  return d ? d.name : dayId;
+  if (!dayId || !dayId.includes('-')) return dayId;
+  const d = new Date(dayId);
+  if (isNaN(d.getTime())) return dayId;
+  const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  return dayNames[d.getDay()];
 }
 
 function renderNotifPanel() {
@@ -2043,29 +2048,65 @@ function renderNotifPanel() {
     return;
   }
   list.innerHTML = '';
+  
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
   notifications.forEach(n => {
     const item = document.createElement('div');
     item.className = 'notif-item';
-    item.textContent = n.text;
+    // وقت وتاريخ النشر (اليوم والشهر)
+    const pubDate = new Date(n.time);
+    const pubDateStr = `${pubDate.getDate()} ${monthNames[pubDate.getMonth()]}`;
+    
+    // يوم وتاريخ الجدول المستهدف
+    let targetDateStr = n.dayId;
+    if (n.dayId && n.dayId.includes('-')) {
+      const d = new Date(n.dayId);
+      const dayName = formatDayName(n.dayId);
+      targetDateStr = (dayName === n.dayId) 
+        ? `${d.getDate()} ${monthNames[d.getMonth()]}` 
+        : `${dayName} (${d.getDate()} ${monthNames[d.getMonth()]})`;
+    }
+
+    item.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <div style="flex:1; line-height:1.4;">
+          <div style="font-weight:700; color:var(--text-primary); font-size:13px;">${n.text}</div>
+          <div style="color:var(--text-muted); font-size:10px; margin-top:4px;">مجدول لـ: ${targetDateStr}</div>
+        </div>
+        <div style="color:var(--text-secondary); font-size:10px; white-space:nowrap; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:6px; border:1px solid var(--border);">
+          ${pubDateStr}
+        </div>
+      </div>
+    `;
     item.onclick = () => { jumpToDay(n.dayId); closeNotifPanel(); };
     list.appendChild(item);
   });
 }
 
 function jumpToDay(dayId) {
-  const daysWeek0 = getWeekDays(0).map(d => d.id);
-  const daysWeek1 = getWeekDays(1).map(d => d.id);
+  let targetOffset = null;
   
-  if (daysWeek1.includes(dayId)) {
-    if (weekOffset !== 1) {
-      weekOffset = 1;
-      renderDays();
+  // البحث عن الأسبوع الذي يحتوي على هذا اليوم (نبحث في الأسبوع الحالي ولغاية 10 أسابيع قادمة)
+  for (let i = 0; i <= 10; i++) {
+    const today = new Date();
+    const d = new Date(today);
+    const dow = d.getDay();
+    const daysToSat = (dow >= 6) ? (dow - 6) : (dow + 1);
+    d.setDate(d.getDate() - daysToSat + (i * 7));
+    
+    let foundInWeek = false;
+    for (let j = 0; j < 7; j++) {
+      const nd = new Date(d);
+      nd.setDate(d.getDate() + j);
+      if (formatDate(nd) === dayId) { foundInWeek = true; break; }
     }
-  } else if (daysWeek0.includes(dayId)) {
-    if (weekOffset !== 0) {
-      weekOffset = 0;
-      renderDays();
-    }
+    if (foundInWeek) { targetOffset = i; break; }
+  }
+  
+  if (targetOffset !== null && weekOffset !== targetOffset) {
+    weekOffset = targetOffset;
+    renderDays();
   }
   
   setTimeout(() => {
@@ -2100,24 +2141,30 @@ document.addEventListener('click', (e) => {
   }
 });
 
-function requestNotifPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      // استبدل المفتاح أدناه بمفتاح الـ VAPID الخاص بك من منصة فايربيس
+      const token = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE' });
+      if (token) {
+        console.log('FCM Token:', token);
+        // يُفضل هنا إرسال الـ token إلى قاعدة بيانات فايربيس لربطه بالمستخدم وتتمكن من مراسلته لاحقاً
+      }
+    }
+  } catch (error) {
+    console.error('فشل الحصول على التوكن:', error);
   }
 }
 
-function sendBrowserNotif(data) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    const n = new Notification('ألفاكلاس - تحضير جديد', {
-      body: `تم نشر ${data.type} - ${data.subject}`,
-      icon: 'https://cdn-icons-png.flaticon.com/512/3389/3389081.png'
-    });
-    n.onclick = () => {
-      window.focus();
-      jumpToDay(data.dayId);
-    };
-  }
-}
+// استقبال الإشعارات الفورية (عندما يكون التطبيق مفتوحاً)
+onMessage(messaging, (payload) => {
+  const { title, body } = payload.notification;
+  showToast('🔔', title, body);
+  playNotifSound();
+});
 
 // ── TOAST ──
 window.showToast = function(icon, title, desc, onclick) {
@@ -2162,6 +2209,11 @@ window.handleModalOverlayClick = function(e, id) {
 document.getElementById('btn-open-login').addEventListener('click', () => openModal('login-modal'));
 document.getElementById('btn-do-login').addEventListener('click', doLogin);
 document.getElementById('login-code').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+document.getElementById('btn-enable-notif')?.addEventListener('click', () => {
+  requestNotifPermission();
+  closeModal('notif-prompt-modal');
+});
 
 // ── LIGHTBOX ──
 let lbUrls = [];

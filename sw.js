@@ -16,6 +16,22 @@ self.addEventListener('install', event => {
   );
 });
 
+// تنظيف الملفات القديمة من الكاش عند تحديث Service Worker
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
 // جلب الملفات من الكاش مع تخزين الصور ديناميكياً للعمل بدون إنترنت
 self.addEventListener('fetch', event => {
   const req = event.request;
@@ -41,10 +57,19 @@ self.addEventListener('fetch', event => {
       })
     );
   } else {
-    // التعامل مع باقي الملفات الأساسية
+    // التعامل مع باقي الملفات الأساسية باستراتيجية (Network First) لضمان حصول المستخدم على التحديثات
     event.respondWith(
-      caches.match(req).then(response => {
-        return response || fetch(req).catch(() => new Response('Offline', { status: 503 }));
+      fetch(req).then(fetchRes => {
+        // حفظ نسخة في الكاش فقط إذا كان الطلب من نوع GET لمنع أخطاء الرفع
+        if (req.method === 'GET') {
+          const resClone = fetchRes.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
+        }
+        return fetchRes;
+      }).catch(() => {
+        return caches.match(req).then(response => {
+          return response || new Response('Offline', { status: 503 });
+        });
       })
     );
   }
