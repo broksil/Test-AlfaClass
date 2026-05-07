@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ألفاكلاس">
 <title>ألفاكلاس</title>
-<link rel="icon" href="صور/ألفاكلاس.png">
-<link rel="apple-touch-icon" href="صور/ألفاكلاس.png">
+<link rel="icon" type="image/png" sizes="32x32" href="صور/غلاف موقع.png">
+<link rel="apple-touch-icon" sizes="180x180" href="صور/غلاف موقع.png">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -474,18 +474,6 @@
   }
   .btn-publish:active { transform: scale(0.97); }
 
-  /* ── FOOTER ── */
-  footer {
-    text-align: center;
-    padding: 20px 16px;
-    font-size: 13px;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin: 8px 16px 20px;
-  }
-
   /* ── MODAL (shared) ── */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 500;
@@ -771,6 +759,93 @@
     animation: modalIn 0.4s ease both;
   }
   #android-install-prompt.show { display: flex; }
+
+  /* ── ALFACHAT (Telegram Style) ── */
+  .alfachat-fab {
+    position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 20px; z-index: 850;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, #0088cc, var(--accent));
+    color: white; font-size: 28px; border: none;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
+  .alfachat-fab:active { transform: scale(0.9); }
+  
+  .alfachat-window {
+    position: fixed; inset: 0; z-index: 851;
+    width: 100vw; height: 100dvh; max-width: none;
+    background: rgba(15, 15, 30, 0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: none; border-radius: 0;
+    display: none; flex-direction: column; overflow: hidden;
+    animation: chatPop 0.3s ease-out both;
+    overscroll-behavior: none;
+  }
+  .alfachat-window.open { display: flex; }
+  @keyframes chatPop { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .chat-header {
+    padding: calc(14px + var(--safe-top)) 16px 14px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px;
+  }
+  .chat-close { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; }
+  
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .chat-msg-wrap { display: flex; flex-direction: column; max-width: 85%; position: relative; }
+  .chat-msg-wrap.mine { align-self: flex-start; align-items: flex-start; margin-left: auto; margin-right: 0; }
+  .chat-msg-wrap.theirs { align-self: flex-end; align-items: flex-end; margin-right: auto; margin-left: 0; }
+  
+  .chat-msg-wrap.grouped {
+    margin-top: -10px;
+  }
+  .chat-msg-wrap.mine.grouped .chat-msg {
+    border-top-right-radius: 4px;
+  }
+  .chat-msg-wrap.theirs.grouped .chat-msg {
+    border-top-left-radius: 4px;
+  }
+  .chat-sender { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+  .chat-msg { padding: 10px 14px; border-radius: 18px; position: relative; font-size: 14px; line-height: 1.5; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  .chat-msg-wrap.mine .chat-msg { background: linear-gradient(135deg, var(--accent), #4f46e5); color: #fff; border-bottom-right-radius: 4px; border-bottom-left-radius: 18px; }
+  .chat-msg-wrap.theirs .chat-msg { background: rgba(255,255,255,0.08); color: var(--text-primary); border-bottom-left-radius: 4px; border-bottom-right-radius: 18px; }
+  
+  .chat-reply-ref { background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 10px; font-size: 12px; border-right: 3px solid #fff; margin-bottom: 6px; cursor: pointer; opacity: 0.9; }
+  .chat-msg-wrap.theirs .chat-reply-ref { border-right: 3px solid var(--accent2); background: rgba(0,0,0,0.15); }
+  
+  .chat-msg-gallery { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; border-radius: 10px; overflow: hidden; }
+  .chat-msg-gallery img { max-width: calc(50% - 2px); flex: 1 1 auto; object-fit: cover; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
+  .chat-msg-gallery img:only-child { max-width: 100%; max-height: 300px; border-radius: 10px; }
+  .chat-time { font-size: 10px; opacity: 0.7; margin-top: 4px; text-align: right; display: block; }
+  
+  .chat-date-separator { text-align: center; margin: 16px 0 8px; display: flex; justify-content: center; }
+  .chat-date-separator span { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.05); color: var(--text-primary); font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 14px; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+
+  .chat-actions-menu { display: flex; gap: 8px; margin-top: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s; font-size: 11px; }
+  .chat-msg-wrap.mine .chat-actions-menu { justify-content: flex-start; }
+  .chat-msg-wrap.show-actions .chat-actions-menu { opacity: 1; pointer-events: all; }
+  .chat-action-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: 0.2s; }
+  .chat-action-btn:active { transform: scale(0.9); }
+
+  .chat-input-container { padding: 12px; padding-bottom: calc(12px + var(--safe-bottom)); background: rgba(0,0,0,0.3); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .chat-context-banner { display: none; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(124,58,237,0.15); border-right: 3px solid var(--accent); border-radius: 10px; font-size: 12px; }
+  .chat-context-banner.show { display: flex; }
+  .chat-attachment-preview { display: none; flex-wrap: wrap; gap: 8px; padding: 4px 8px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+  .chat-attachment-preview.show { display: flex; }
+  .chat-preview-item { position: relative; width: 45px; height: 45px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+  .chat-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-preview-rm { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; background: rgba(239,68,68,0.9); color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1; transition: transform 0.2s; }
+  .chat-preview-rm:active { transform: scale(0.8); }
+  .chat-input-row { display: flex; align-items: center; gap: 8px; }
+  .chat-attach-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); transition: 0.2s; }
+  .chat-attach-btn:active { transform: scale(0.8); }
+  .chat-input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 20px; padding: 12px 16px; color: var(--text-primary); font-family: var(--font); outline: none; font-size: 14px; }
+  .chat-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.09); }
+  .chat-send-btn { background: linear-gradient(135deg, var(--accent), #4f46e5); border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; font-size: 18px; box-shadow: 0 4px 15px var(--accent-glow); transition: 0.2s; }
+  .chat-send-btn:active { transform: scale(0.9); }
+  .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .chat-upload-progress { font-size: 11px; color: var(--accent2); display: none; text-align: center; }
+  .chat-typing-indicator { font-size: 11px; color: var(--accent2); padding: 0 12px 4px; font-style: italic; display: none; }
+  .chat-typing-indicator.show { display: block; animation: pulseOpacity 1.5s infinite; }
 </style>
 </head>
 <body>
@@ -834,8 +909,6 @@
     </div>
     <div class="days-list" id="days-list"></div>
   </main>
-
-  <footer>نسأل الله لنا ولكم النفع والقبول، ولا تنسوا إخوتكم العاملين في قسم النشر من صالح دعائكم</footer>
 </div>
 
 <!-- Toast container -->
@@ -946,6 +1019,16 @@
   </div>
 </div>
 
+<!-- ── READ BY MODAL ── -->
+<div class="modal-overlay" id="read-by-modal" onclick="handleModalOverlayClick(event,'read-by-modal')">
+  <div class="modal-box" id="read-by-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👀 تمت القراءة بواسطة</div>
+    <div id="read-by-list-content" style="display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto;"></div>
+    <button class="btn-submit" style="background:rgba(255,255,255,0.06);box-shadow:none;margin-top:16px;color:var(--text-secondary)" onclick="closeModal('read-by-modal')">إغلاق</button>
+  </div>
+</div>
+
 <!-- ── NOTIFICATION PROMPT MODAL ── -->
 <div class="modal-overlay" id="notif-prompt-modal" onclick="handleModalOverlayClick(event,'notif-prompt-modal')">
   <div class="modal-box" id="notif-prompt-box">
@@ -971,6 +1054,34 @@
   </div>
 </div>
 
+<!-- ── ALFACHAT WINDOW ── -->
+<button id="alfachat-fab" class="alfachat-fab" onclick="toggleAlfachat()" title="ألفاشات">💬</button>
+
+<div id="alfachat-window" class="alfachat-window">
+  <div class="chat-header">
+    <div>💬 ألفاشات <br><span style="font-size:10px; font-weight:normal; color:var(--text-secondary)">رسائل آخر 7 أيام - تختفي تلقائياً</span></div>
+    <button class="chat-close" onclick="toggleAlfachat()">✖</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+     <div class="text-center" style="color:var(--text-muted);font-size:12px;margin-top:20px;">الرجاء تسجيل الدخول لتحميل الرسائل...</div>
+  </div>
+  <div class="chat-input-container">
+    <div id="chat-typing-indicator" class="chat-typing-indicator"></div>
+    <div id="chat-context-banner" class="chat-context-banner">
+      <div id="chat-context-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"></div>
+      <button onclick="cancelChatContext()" style="background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:16px;">✖</button>
+    </div>
+    <div id="chat-attachment-preview" class="chat-attachment-preview"></div>
+    <div id="chat-upload-progress" class="chat-upload-progress">⏳ جارٍ رفع الصورة...</div>
+    <div class="chat-input-row">
+      <button class="chat-attach-btn" onclick="document.getElementById('chat-image-input').click()">📎</button>
+      <input type="file" id="chat-image-input" hidden accept="image/*" multiple onchange="handleChatImageUpload(this)">
+      <input type="text" id="chat-input" class="chat-input" placeholder="اكتب رسالتك هنا..." oninput="handleChatTyping()" onkeypress="if(event.key==='Enter') sendChatMessage()">
+      <button class="chat-send-btn" onclick="sendChatMessage()">🚀</button>
+    </div>
+  </div>
+</div>
+
 <!-- Android/Desktop Install Prompt -->
 <div id="android-install-prompt">
   <div class="ios-prompt-header">
@@ -988,7 +1099,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import {
   getFirestore, collection, onSnapshot, addDoc, query, orderBy,
-  updateDoc, doc, deleteDoc, where, getDocs, setDoc, increment, getDoc, enableIndexedDbPersistence
+  updateDoc, doc, deleteDoc, where, getDocs, setDoc, increment, getDoc, enableIndexedDbPersistence, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
 
@@ -1022,7 +1133,7 @@ const ADMINS = [
   // المشرفين (يمكنهم النشر)
   { name: "باقر محمد زامل",          role: "المساعد", code: "81472", color: "#ff6b6b", isAdmin: true, superAdmin: true },
   { name: "رضا فلاح حسن",             role: "الممثل",  code: "33444", color: "#c0392b", isAdmin: true },
-  { name: "حيدر محمد عبد الرحيم علي", role: "طالب",  code: "40004", color: "#00bfff", isAdmin: true, icon: "صور/حيدر.png" },
+  { name: "حيدر محمد عبد الرحيم", role: "طالب",  code: "40004", color: "#00bfff", isAdmin: true, icon: "صور/حيدر.png" },
   { name: "أساور أحمد عباس",          role: "طالبة", code: "30003", color: "#ff69b4", isAdmin: true },
   
   // الطلاب (لا يمكنهم النشر - للعرض فقط)
@@ -1503,7 +1614,7 @@ function renderPostsForDay(dayId, posts) {
 
     const mediaHTML = buildMediaHTML(post);
     const noteHTML = post.note ? `<div class="post-note">${formatNote(post.note)}</div>` : '';
-    const postIcon = post.authorIcon ? post.authorIcon : (post.author === 'حيدر محمد عبد الرحيم علي' ? 'صور/حيدر.png' : '');
+    const postIcon = post.authorIcon ? post.authorIcon : (post.author === 'حيدر محمد عبد الرحيم' ? 'صور/حيدر.png' : '');
     const authorIconHTML = postIcon ? `<img src="${postIcon}" class="author-badge" alt="شعار">` : '';
     const adminActions = currentUser?.isAdmin ? `
       <div class="post-actions">
@@ -1644,6 +1755,26 @@ window.openViewersModal = function(e, dayId) {
     });
   }
   openModal('viewers-modal');
+};
+
+window.showReadByModal = function(e, readByJson) {
+  e.stopPropagation(); // منع إظهار قائمة خيارات الرسالة
+  const readBy = JSON.parse(decodeURIComponent(readByJson));
+  const listEl = document.getElementById('read-by-list-content');
+  
+  listEl.innerHTML = '';
+  
+  if (!readBy || readBy.length === 0) {
+    listEl.innerHTML = '<div class="day-empty">لم يقرأها أحد بعد.</div>';
+  } else {
+    readBy.forEach(name => {
+      const item = document.createElement('div');
+      item.className = 'notif-item'; // إعادة استخدام نفس التنسيق
+      item.innerHTML = `<span style="font-weight:bold">${sanitizeText(name)}</span>`;
+      listEl.appendChild(item);
+    });
+  }
+  openModal('read-by-modal');
 };
 
 // ── DRAFT SYSTEM ──
@@ -2354,6 +2485,422 @@ document.addEventListener('touchend', e => {
   }
 }, {passive:true});
 
+// ── ALFACHAT LOGIC ──
+let alfachatUnsub = null;
+let chatReplyContext = null;
+let chatEditContext = null;
+let pendingChatFiles = [];
+let typingUnsub = null;
+let chatTypingTimeout = null;
+let isChatTyping = false;
+
+function formatChatDate(timestamp) {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return 'اليوم';
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return 'أمس';
+  } else {
+    return date.toLocaleDateString('ar-IQ', { month: 'short', day: 'numeric' });
+  }
+}
+
+window.toggleAlfachat = function() {
+  const win = document.getElementById('alfachat-window');
+  win.classList.toggle('open');
+  if (win.classList.contains('open')) {
+    if (!currentUser) {
+      showToast('⚠️', 'تنبيه', 'يجب تسجيل الدخول (حتى لو كزائر) لفتح المحادثة');
+      win.classList.remove('open');
+      openModal('login-modal');
+      return;
+    }
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    subscribeToAlfachat();
+    
+    // التمرير التلقائي للأسفل لضمان رؤية أحدث الرسائل فور الفتح
+    setTimeout(() => {
+      const chatMessagesEl = document.getElementById('chat-messages');
+      if (chatMessagesEl) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }, 150);
+  } else {
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+  }
+};
+
+function subscribeToAlfachat() {
+  if (alfachatUnsub) return;
+  const chatMessagesEl = document.getElementById('chat-messages');
+  chatMessagesEl.innerHTML = '<div class="text-center" style="color:var(--text-muted);font-size:12px;margin-top:20px;"><span class="spinner"></span></div>';
+  
+  // استعلام للحصول على رسائل آخر 7 أيام فقط (تختفي الرسائل الأقدم تلقائياً)
+  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const q = query(
+    collection(db, 'alfachats'),
+    where('createdAt', '>=', sevenDaysAgo),
+    orderBy('createdAt', 'asc')
+  );
+
+  alfachatUnsub = onSnapshot(q, (snap) => {
+    chatMessagesEl.innerHTML = '';
+    if (snap.empty) {
+      chatMessagesEl.innerHTML = '<div class="text-center" style="color:var(--text-muted);font-size:12px;margin-top:20px;">لا توجد رسائل حديثة. كُن أول من يرسل! 👋</div>';
+      return;
+    }
+
+    const messages = [];
+    const unreadMsgIds = [];
+    snap.forEach(docSnap => {
+      const msg = docSnap.data();
+      msg.id = docSnap.id;
+      messages.push(msg);
+
+      // التحقق مما إذا كانت الرسالة لم تقرأ بواسطة المستخدم الحالي
+      if (currentUser && msg.senderName !== currentUser.name) {
+        let readerName = currentUser.name;
+        if (readerName === 'زائر') {
+          let guestId = localStorage.getItem('guestId');
+          if (!guestId) {
+            guestId = Math.floor(1000 + Math.random() * 9000).toString();
+            localStorage.setItem('guestId', guestId);
+          }
+          readerName = `زائر (${guestId})`;
+        }
+        if (!msg.readBy || !msg.readBy.includes(readerName)) {
+          unreadMsgIds.push({ id: msg.id, readerName });
+        }
+      }
+    });
+
+    let lastDateString = null;
+
+    messages.forEach((msg, index) => {
+        const prevMsg = messages[index - 1];
+        const nextMsg = messages[index + 1];
+
+        const msgDateString = new Date(msg.createdAt).toDateString();
+        
+        const isSameDayAsPrev = prevMsg && new Date(prevMsg.createdAt).toDateString() === msgDateString;
+        const isSameDayAsNext = nextMsg && new Date(nextMsg.createdAt).toDateString() === msgDateString;
+
+        const isContinuation = prevMsg && 
+                               prevMsg.senderName === msg.senderName &&
+                               (msg.createdAt - prevMsg.createdAt < 5 * 60 * 1000) &&
+                               isSameDayAsPrev;
+
+        const isLastInGroup = !nextMsg || 
+                              nextMsg.senderName !== msg.senderName ||
+                              (nextMsg.createdAt - msg.createdAt >= 5 * 60 * 1000) ||
+                              !isSameDayAsNext;
+
+        if (msgDateString !== lastDateString) {
+            const sepWrap = document.createElement('div');
+            sepWrap.className = 'chat-date-separator';
+            sepWrap.innerHTML = `<span>${formatChatDate(msg.createdAt)}</span>`;
+            chatMessagesEl.appendChild(sepWrap);
+            lastDateString = msgDateString;
+        }
+
+        renderChatMessage(msg, chatMessagesEl, isContinuation, isLastInGroup);
+    });
+    
+    // النزول لأسفل المحادثة تلقائياً عند استلام رسائل
+    setTimeout(() => { chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight; }, 100);
+
+    // إضافة المستخدم لقائمة القراء في الخلفية للرسائل التي لم يقرأها
+    unreadMsgIds.forEach(item => {
+      updateDoc(doc(db, 'alfachats', item.id), {
+        readBy: arrayUnion(item.readerName)
+      }).catch(() => {});
+    });
+  });
+
+  const typingQ = query(collection(db, 'alfachat_typing'), where('isTyping', '==', true));
+  typingUnsub = onSnapshot(typingQ, (snap) => {
+    const typingUsers = [];
+    const now = Date.now();
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const myDocId = currentUser?.code || localStorage.getItem('guestId') || currentUser?.name;
+      // إظهار من يكتبون في آخر 10 ثواني (تجاهل المستخدم الحالي)
+      if (docSnap.id !== myDocId && (now - data.timestamp < 10000)) {
+        if (!typingUsers.includes(data.name)) typingUsers.push(data.name);
+      }
+    });
+    
+    const indicator = document.getElementById('chat-typing-indicator');
+    if (indicator) {
+      if (typingUsers.length > 0) {
+        indicator.textContent = typingUsers.length === 1 ? `${typingUsers[0]} يكتب الان...` : `عدة أشخاص يكتبون الان...`;
+        indicator.classList.add('show');
+      } else {
+        indicator.classList.remove('show');
+      }
+    }
+  });
+}
+
+function renderChatMessage(msg, container, isContinuation = false, isLastInGroup = true) {
+  const isMine = msg.senderName === currentUser?.name;
+  
+  const wrap = document.createElement('div');
+  wrap.className = `chat-msg-wrap ${isMine ? 'mine' : 'theirs'}`;
+  if (isContinuation) {
+    wrap.classList.add('grouped');
+  }
+  // إظهار وإخفاء خيارات الرسالة عند النقر عليها (مهم للموبايل)
+  wrap.onclick = () => wrap.classList.toggle('show-actions');
+
+  let replyHtml = '';
+  if (msg.replyTo) {
+    replyHtml = `<div class="chat-reply-ref" onclick="scrollToChatMsg('${msg.replyTo.id}'); event.stopPropagation();">
+      <div style="font-weight:bold; color:${isMine ? '#fff' : 'var(--accent2)'}; font-size:11px;">${sanitizeText(msg.replyTo.senderName)}</div>
+      <div>${sanitizeText(msg.replyTo.text || 'صورة 🖼️')}</div>
+    </div>`;
+  }
+
+  let imgHtml = '';
+  const urls = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
+  if (urls.length > 0) {
+    const safeUrls = JSON.stringify(urls).replace(/"/g, '&quot;');
+    imgHtml = `<div class="chat-msg-gallery">`;
+    urls.forEach((url, idx) => {
+       imgHtml += `<img src="${url}" loading="lazy" onclick="openLightbox(${safeUrls}, ${idx}); event.stopPropagation();">`;
+    });
+    imgHtml += `</div>`;
+  }
+
+  const timeStr = new Date(msg.createdAt).toLocaleTimeString('ar-IQ', {hour:'2-digit', minute:'2-digit'});
+  const editedStr = msg.edited ? '<span style="font-size:9px; opacity:0.6;"> (معدلة)</span>' : '';
+  
+  let statusHtml = '';
+  if (isMine) {
+    const readers = msg.readBy || [];
+    const isRead = readers.length > 0;
+    const statusIcon = isRead ? '✓✓' : '✓';
+    const statusClass = isRead ? 'read' : '';
+    const readByJson = encodeURIComponent(JSON.stringify(readers));
+    const clickHandler = isRead ? `onclick="showReadByModal(event, '${readByJson}')"` : '';
+    const cursorStyle = isRead ? 'cursor:pointer;' : '';
+    statusHtml = `<span class="chat-msg-status ${statusClass}" style="${cursorStyle}" ${clickHandler}>${statusIcon}</span>`;
+  }
+
+  let actionsHtml = `<div class="chat-actions-menu">
+    <button class="chat-action-btn" onclick="setChatReply('${msg.id}', '${msg.senderName}', '${(msg.text || 'صورة').replace(/'/g, "\\'")}'); event.stopPropagation();">↩️ رد</button>
+  `;
+  if (isMine || currentUser?.isAdmin) {
+     actionsHtml += `<button class="chat-action-btn" style="color:#ef4444;" onclick="deleteChatMessage('${msg.id}'); event.stopPropagation();">🗑️ حذف</button>`;
+  }
+  if (isMine && urls.length === 0) {
+     actionsHtml += `<button class="chat-action-btn" onclick="setChatEdit('${msg.id}', '${(msg.text || '').replace(/'/g, "\\'")}'); event.stopPropagation();">✏️ تعديل</button>`;
+  }
+  actionsHtml += `</div>`;
+
+  const senderHtml = (!isMine && !isContinuation) ? `<div class="chat-sender" style="color:${msg.senderColor || 'var(--accent2)'}">${sanitizeText(msg.senderName)}</div>` : '';
+  
+  // Add a class to the message bubble if it's not the last one in a group
+  const msgBubbleClass = isLastInGroup ? '' : 'not-last-in-group';
+
+  wrap.innerHTML = `
+    <div class="chat-msg ${msgBubbleClass}" id="chat-msg-${msg.id}">
+      ${senderHtml}
+      ${replyHtml}
+      ${msg.text ? `<div>${sanitizeText(msg.text)}</div>` : ''}
+      ${imgHtml}
+      <span class="chat-time">${statusHtml} ${timeStr}${editedStr}</span>
+    </div>
+    ${actionsHtml}
+  `;
+  container.appendChild(wrap);
+}
+
+window.scrollToChatMsg = function(id) {
+   const el = document.getElementById(`chat-msg-${id}`);
+   if (el) {
+     el.scrollIntoView({behavior: 'smooth', block: 'center'});
+     el.style.transform = 'scale(1.02)';
+     el.style.transition = 'transform 0.3s';
+     setTimeout(() => el.style.transform = 'scale(1)', 400);
+   }
+}
+
+window.sendChatMessage = async function() {
+  const inputEl = document.getElementById('chat-input');
+  const text = inputEl.value.trim();
+  
+  if (!text && pendingChatFiles.length === 0) return;
+
+  const btn = document.querySelector('.chat-send-btn');
+  btn.disabled = true;
+
+  // الاحتفاظ بالبيانات محلياً قبل تفريغ واجهة المستخدم
+  const msgText = text;
+  const editCtx = chatEditContext;
+  const replyCtx = chatReplyContext;
+  const filesToUpload = [...pendingChatFiles];
+
+  // إيقاف مؤشر الكتابة فوراً
+  clearTimeout(chatTypingTimeout);
+  if (isChatTyping && currentUser) {
+    isChatTyping = false;
+    const myDocId = currentUser.code || localStorage.getItem('guestId') || currentUser.name;
+    setDoc(doc(db, 'alfachat_typing', myDocId), { name: currentUser.name, isTyping: false, timestamp: Date.now() }).catch(()=>{});
+  }
+
+  // مسح الحقل وإلغاء السياق فوراً بمجرد بدء الإرسال (لتحسين سرعة الاستجابة)
+  inputEl.value = '';
+  cancelChatContext();
+
+  const progEl = document.getElementById('chat-upload-progress');
+  if (filesToUpload.length > 0) {
+    progEl.style.display = 'block';
+  }
+
+  try {
+    const uploadedUrls = [];
+    for (let i = 0; i < filesToUpload.length; i++) {
+      progEl.innerText = `⏳ جارٍ رفع الصورة ${i + 1} من ${filesToUpload.length}...`;
+      const url = await uploadToCloudinary(filesToUpload[i]);
+      uploadedUrls.push(url);
+    }
+
+    if (editCtx) {
+       // تحديث الرسالة
+       await updateDoc(doc(db, 'alfachats', editCtx.id), {
+         text: msgText,
+         edited: true
+       });
+    } else {
+       // رسالة جديدة
+       const msgData = {
+         text: msgText,
+           imageUrls: uploadedUrls,
+         senderName: currentUser.name,
+         senderColor: currentUser.color || '#a0a0b0',
+         createdAt: Date.now(),
+         edited: false,
+         readBy: []
+       };
+       if (replyCtx) {
+         msgData.replyTo = replyCtx;
+       }
+       await addDoc(collection(db, 'alfachats'), msgData);
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('❌', 'خطأ', 'فشل إرسال الرسالة، تأكد من اتصالك بالإنترنت');
+    // إعادة النص للحقل في حال فشل الإرسال
+    inputEl.value = msgText;
+    pendingChatFiles = filesToUpload;
+    chatEditContext = editCtx;
+    chatReplyContext = replyCtx;
+    if (editCtx) setChatContext('edit', null, 'تعديل الرسالة');
+    else if (replyCtx) setChatContext('reply', replyCtx.senderName, replyCtx.text);
+    renderChatAttachmentPreview();
+  } finally {
+    progEl.style.display = 'none';
+    progEl.innerText = '⏳ جارٍ رفع الصورة...';
+    btn.disabled = false;
+  }
+}
+
+window.handleChatImageUpload = function(input) {
+  if (!input.files || input.files.length === 0) return;
+  const files = Array.from(input.files);
+  pendingChatFiles = [...pendingChatFiles, ...files];
+  renderChatAttachmentPreview();
+  input.value = '';
+}
+
+window.handleChatTyping = function() {
+  if (!currentUser) return;
+  const myDocId = currentUser.code || localStorage.getItem('guestId') || currentUser.name;
+  
+  if (!isChatTyping) {
+    isChatTyping = true;
+    setDoc(doc(db, 'alfachat_typing', myDocId), { name: currentUser.name, isTyping: true, timestamp: Date.now() }).catch(()=>{});
+  }
+  
+  clearTimeout(chatTypingTimeout);
+  chatTypingTimeout = setTimeout(() => {
+    isChatTyping = false;
+    setDoc(doc(db, 'alfachat_typing', myDocId), { name: currentUser.name, isTyping: false, timestamp: Date.now() }).catch(()=>{});
+  }, 2000);
+}
+
+window.renderChatAttachmentPreview = function() {
+  const container = document.getElementById('chat-attachment-preview');
+  if (!container) return;
+  if (pendingChatFiles.length === 0) {
+    container.classList.remove('show');
+    container.innerHTML = '';
+    return;
+  }
+  container.classList.add('show');
+  container.innerHTML = '';
+  pendingChatFiles.forEach((file, idx) => {
+    const item = document.createElement('div');
+    item.className = 'chat-preview-item';
+    const url = URL.createObjectURL(file);
+    item.innerHTML = `<img src="${url}" alt="مرفق"><div class="chat-preview-rm" onclick="removeChatImage(${idx})">×</div>`;
+    container.appendChild(item);
+  });
+};
+
+window.removeChatImage = function(idx) {
+  pendingChatFiles.splice(idx, 1);
+  renderChatAttachmentPreview();
+};
+
+window.setChatReply = function(id, senderName, text) {
+  chatReplyContext = { id, senderName, text };
+  chatEditContext = null;
+  setChatContext('reply', senderName, text);
+  document.getElementById('chat-input').focus();
+}
+
+window.setChatEdit = function(id, text) {
+  chatEditContext = { id, text };
+  chatReplyContext = null;
+  document.getElementById('chat-input').value = text;
+  setChatContext('edit', null, 'تعديل الرسالة');
+  document.getElementById('chat-input').focus();
+}
+
+function setChatContext(type, name, text) {
+  const banner = document.getElementById('chat-context-banner');
+  const txtEl = document.getElementById('chat-context-text');
+  banner.classList.add('show');
+  if (type === 'reply') txtEl.innerHTML = `<b>رد على ${sanitizeText(name)}:</b> ${sanitizeText(text)}`;
+  else if (type === 'edit') txtEl.innerHTML = `<b>✏️ ${sanitizeText(text)}</b>`;
+  else if (type === 'attachment') txtEl.innerHTML = `<b>📎 ${sanitizeText(text)}</b>`;
+}
+
+window.cancelChatContext = function() {
+  const wasEditing = !!chatEditContext;
+  chatReplyContext = null;
+  chatEditContext = null;
+  pendingChatFiles = [];
+  document.getElementById('chat-context-banner').classList.remove('show');
+  renderChatAttachmentPreview();
+  if (wasEditing) document.getElementById('chat-input').value = '';
+}
+
+window.deleteChatMessage = async function(id) {
+  if(!confirm('هل تريد حذف هذه الرسالة نهائياً؟')) return;
+  try {
+     await deleteDoc(doc(db, 'alfachats', id));
+  } catch(e) {
+     showToast('❌', 'خطأ', 'فشل حذف الرسالة');
+  }
+}
+
 // ── INIT ──
 function init() {
   // Hide loading screen
@@ -2475,4 +3022,14 @@ if (isIos && !isStandalone && !localStorage.getItem('iosPromptDismissed')) {
 }
 </script>
 </body>
+</html>t>
+</body>
+</html>
+</html>
+</html>
+</html>
+</html>
+</html>
+</html>
+</html>
 </html>

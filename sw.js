@@ -3,7 +3,156 @@ const DYNAMIC_CACHE = 'alfaclass-images-v1';
 const urlsToCache = [
   './',
   './index.html',
-  './صور/ألفاكلاس.png'
+  './صور/ألفاكلاس.png',
+  './صور/غلاف موقع.png'
+];
+
+// تنصيب Service Worker وتخزين الملفات الأساسية
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// تنظيف الملفات القديمة من الكاش عند تحديث Service Worker
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// جلب الملفات من الكاش مع تخزين الصور ديناميكياً للعمل بدون إنترنت
+self.addEventListener('fetch', event => {
+  const req = event.request;
+
+  // إذا كان الطلب لصورة (مثل صور المنشورات من Cloudinary)
+  if (req.destination === 'image' || req.url.includes('res.cloudinary.com')) {
+    event.respondWith(
+      caches.match(req,
+  './صور/غلاف موقع.png'
+];
+
+// تنصيب Service Worker وتخزين الملفات الأساسية
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// تنظيف الملفات القديمة من الكاش عند تحديث Service Worker
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// جلب الملفات من الكاش مع تخزين الصور ديناميكياً للعمل بدون إنترنت
+self.addEventListener('fetch', event => {
+  const req = event.request;
+
+  // إذا كان الطلب لصورة (مثل صور المنشورات من Cloudinary)
+  if (req.destination === 'image' || req.url.includes('res.cloudinary.com')) {
+    event.respondWith(
+      caches.match(req,
+  './صور/غلاف موقع.png'
+];
+
+// تنصيب Service Worker وتخزين الملفات الأساسية
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// تنظيف الملفات القديمة من الكاش عند تحديث Service Worker
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// جلب الملفات من الكاش مع تخزين الصور ديناميكياً للعمل بدون إنترنت
+self.addEventListener('fetch', event => {
+  const req = event.request;
+
+  // إذا كان الطلب لصورة (مثل صور المنشورات من Cloudinary)
+  if (req.destination === 'image' || req.url.includes('res.cloudinary.com')) {
+    event.respondWith(
+      caches.match(req,
+  './صور/غلاف موقع.png'
+];
+
+// تنصيب Service Worker وتخزين الملفات الأساسية
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+// تنظيف الملفات القديمة من الكاش عند تحديث Service Worker
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// جلب الملفات من الكاش مع تخزين الصور ديناميكياً للعمل بدون إنترنت
+self.addEventListener('fetch', event => {
+  const req = event.request;
+
+  // إذا كان الطلب لصورة (مثل صور المنشورات من Cloudinary)
+  if (req.destination === 'image' || req.url.includes('res.cloudinary.com')) {
+    event.respondWith(
+      caches.match(req,
+  './صور/غلاف موقع.png'
 ];
 
 // تنصيب Service Worker وتخزين الملفات الأساسية
