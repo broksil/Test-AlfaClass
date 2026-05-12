@@ -1688,9 +1688,8 @@ function renderPostsForDay(dayId, posts) {
       if (currentUser.isAdmin) {
         actionsHtml += `${!post.isOffline ? `<button class="btn-edit" onclick="openEditModal('${post.id}')">✏️ تعديل</button>` : ''}`;
         actionsHtml += `<button class="btn-delete" onclick="${post.isOffline ? `deleteOfflinePostHandler(${post.id})` : `deletePost('${post.id}', ${JSON.stringify(post.mediaUrls || []).replace(/"/g,'&quot;')})`}">🗑️ حذف</button>`;
-      } else {
-        actionsHtml += `<button class="btn-edit" style="color: #3b82f6; border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.1);" onclick="openEnquiryModal('${post.id}')">❓ استفسار</button>`;
       }
+      actionsHtml += `<button class="btn-edit" style="color: #3b82f6; border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.1);" onclick="openEnquiryModal('${post.id}')">❓ استفسار</button>`;
       actionsHtml += '</div>';
     }
 
@@ -2008,7 +2007,7 @@ window.openEnquiryModal = function(postId) {
   document.getElementById('enq-post-note').value = post.note || '';
   document.getElementById('enq-post-type').value = post.type || 'تحضير';
 
-  document.getElementById('enq-subject-label').innerHTML = `<b>${sanitizeText(post.type || 'بخصوص')}:</b> ${sanitizeText(post.subject)}`;
+  document.getElementById('enq-subject-label').innerHTML = `<b>${sanitizeText(post.subject)}</b>`;
   document.getElementById('enq-note').value = '';
   pendingFiles['enq-images'] = [];
   document.getElementById('prev-enq-images').innerHTML = '';
@@ -2043,6 +2042,18 @@ document.getElementById('btn-send-enquiry')?.addEventListener('click', async () 
       }
     }
 
+    const knownTypes = {
+      'تقرير': 'التقرير',
+      'كويز': 'الكويز',
+      'ميد': 'الميد',
+      'فاينل': 'الفاينل',
+      'امتحان': 'الامتحان',
+      'واجب': 'الواجب',
+      'تحضير': 'التحضير',
+      'آخر': 'موضوع آخر'
+    };
+    const displayType = knownTypes[postType] || (postType ? postType : 'التحضير');
+
     await addDoc(collection(db, 'alfachats'), {
       text: note,
       postRef: {
@@ -2052,7 +2063,7 @@ document.getElementById('btn-send-enquiry')?.addEventListener('click', async () 
         type: postType
       },
       imageUrls: uploadedUrls,
-      senderName: `سؤال طالب بخصوص ${postType || 'تحضير'}`,
+      senderName: `سؤال طالب بخصوص ${displayType}`,
       senderColor: '#3b82f6', // لون أزرق مميز للاستفسارات لتمييزها في الدردشة
       senderIcon: '',
       createdAt: Date.now(),
@@ -3195,9 +3206,8 @@ function renderChatMessage(msg, container, isContinuation = false, isLastInGroup
 
   let postRefHtml = '';
   if (msg.postRef) {
-    const refType = msg.postRef.type ? sanitizeText(msg.postRef.type) : 'بخصوص';
     postRefHtml = `<div class="chat-reply-ref" style="border-right-color: #f59e0b;" onclick="window.jumpToDay('${msg.postRef.dayId}'); toggleAlfachat(); event.stopPropagation();">
-      <div style="font-weight:bold; color:#f59e0b; font-size:11px; margin-bottom:2px;">📌 ${refType}: ${sanitizeText(msg.postRef.subject)}</div>
+      <div style="font-weight:bold; color:#f59e0b; font-size:11px; margin-bottom:2px;">📌 ${sanitizeText(msg.postRef.subject)}</div>
       <div style="font-size:10px; opacity:0.8; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${sanitizeText(msg.postRef.note || 'بدون وصف')}</div>
     </div>`;
   }
