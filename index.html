@@ -795,7 +795,7 @@
   @keyframes chatPop { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
   
   .chat-header {
-    padding: calc(14px + var(--safe-top)) 16px 14px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
+    padding: calc(10px + var(--safe-top)) 16px 10px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px;
   }
   .chat-close { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; }
@@ -1076,7 +1076,7 @@
 
 <div id="alfachat-window" class="alfachat-window">
   <div class="chat-header">
-    <div>💬 ألفاشات <br><span style="font-size:10px; font-weight:normal; color:var(--text-secondary)">رسائل آخر 7 أيام - تختفي تلقائياً</span></div>
+    <div>💬 ألفاشات</div>
     <button class="chat-close" onclick="toggleAlfachat()">✖</button>
   </div>
   <div class="chat-messages" id="chat-messages">
@@ -1093,7 +1093,7 @@
     <div class="chat-input-row">
       <button class="chat-attach-btn" onclick="document.getElementById('chat-file-input').click()">📎</button>
       <input type="file" id="chat-file-input" hidden accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple onchange="handleChatImageUpload(this)">
-      <input type="text" id="chat-input" class="chat-input" placeholder="اكتب رسالتك هنا..." oninput="handleChatTyping()" onkeypress="if(event.key==='Enter') sendChatMessage()">
+      <input type="text" id="chat-input" class="chat-input" placeholder="اكتب رسالتك هنا..." autocomplete="nope" oninput="handleChatTyping()" onkeypress="if(event.key==='Enter') sendChatMessage()">
       <button class="chat-send-btn" onclick="sendChatMessage()">🚀</button>
     </div>
   </div>
@@ -3067,7 +3067,12 @@ function renderChatMessage(msg, container, isContinuation = false, isLastInGroup
   }
   actionsHtml += `</div>`;
 
-  const senderHtml = (!isMine && !isContinuation) ? `<div class="chat-sender" style="color:${msg.senderColor || 'var(--accent2)'}">${sanitizeText(msg.senderName)}</div>` : '';
+  let senderIconHtml = '';
+  const iconSrc = msg.senderIcon ? msg.senderIcon : (msg.senderName === 'حيدر محمد عبد الرحيم' ? 'صور/حيدر.png' : '');
+  if (iconSrc) {
+    senderIconHtml = `<img src="${iconSrc}" class="author-badge" alt="شعار">`;
+  }
+  const senderHtml = (!isMine && !isContinuation) ? `<div class="chat-sender" style="color:${msg.senderColor || 'var(--accent2)'}; display:flex; align-items:center; gap:4px;">${sanitizeText(msg.senderName)}${senderIconHtml}</div>` : '';
   
   // Add a class to the message bubble if it's not the last one in a group
   const msgBubbleClass = isLastInGroup ? '' : 'not-last-in-group';
@@ -3149,6 +3154,7 @@ window.sendChatMessage = async function() {
            imageUrls: uploadedUrls,
          senderName: currentUser.name,
          senderColor: currentUser.color || '#a0a0b0',
+             senderIcon: currentUser.icon || (currentUser.name === 'حيدر محمد عبد الرحيم' ? 'صور/حيدر.png' : ''),
          createdAt: Date.now(),
          edited: false,
          readBy: []
