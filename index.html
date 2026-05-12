@@ -1026,6 +1026,36 @@
   </div>
 </div>
 
+<!-- ── ENQUIRY MODAL ── -->
+<div class="modal-overlay" id="enquiry-modal" onclick="handleModalOverlayClick(event,'enquiry-modal')">
+  <div class="modal-box" id="enquiry-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">❓ استفسار عن تحضير</div>
+    <div class="form-group">
+      <label class="form-label" id="enq-subject-label"></label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">سؤالك</label>
+      <textarea class="form-textarea" id="enq-note" placeholder="اكتب استفسارك هنا بوضوح..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">إرفاق ملفات / صور (اختياري)</label>
+      <div class="upload-zone" onclick="document.getElementById('enq-files-all').click()">
+        <div class="upload-icon">📎</div>
+        <div>اضغط لإرفاق ملف أو صورة</div>
+        <input type="file" id="enq-files-all" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple onchange="handleFileSelect('enq-images',this)" hidden>
+      </div>
+      <div class="upload-preview" id="prev-enq-images"></div>
+    </div>
+    <button class="btn-submit" id="btn-send-enquiry">🚀 إرسال الاستفسار للدردشة</button>
+    <button class="btn-submit" style="background:rgba(255,255,255,0.06);box-shadow:none;margin-top:8px;color:var(--text-secondary)" onclick="closeModal('enquiry-modal')">إلغاء</button>
+    <input type="hidden" id="enq-post-subject">
+    <input type="hidden" id="enq-post-day">
+    <input type="hidden" id="enq-post-note">
+    <input type="hidden" id="enq-post-type">
+  </div>
+</div>
+
 <!-- ── VIEWERS MODAL ── -->
 <div class="modal-overlay" id="viewers-modal" onclick="handleModalOverlayClick(event,'viewers-modal')">
   <div class="modal-box" id="viewers-box">
@@ -1189,14 +1219,15 @@ const ADMINS = [
   { name: "شيرين سمير كاظم",          role: "طالبة", code: "22662", color: "#8b5cf6", isAdmin: false },
   { name: "شيماء أسعد كريم",          role: "طالبة", code: "78787", color: "#ec4899", isAdmin: false },
   { name: "علي طيف سعد",              role: "طالب",  code: "55995", color: "#14b8a6", isAdmin: false },
-  { name: "داليا علاء عبد الله",      role: "طالبة", code: "44884", color: "#d946ef", isAdmin: false }
+  { name: "داليا علاء عبد الله",      role: "طالبة", code: "44884", color: "#d946ef", isAdmin: false },
+  { name: "محمد باقر محمد",           role: "طالب",  code: "2031", color: "#3b82f6", isAdmin: false }
 ];
 
 // ── STATE ──
 let currentUser = null;
 let weekOffset = 0;
 let openDayId = null;
-let pendingFiles = { images: [] };
+let pendingFiles = { images: [], 'enq-images': [] };
 let notifications = [];
 let notifCount = 0;
 let unsubPosts = null;
@@ -1208,6 +1239,7 @@ let localOfflinePosts = [];
 let editingMediaUrls = [];
 const notifSound = new Audio('https://actions.google.com/sounds/v1/ui/pop.ogg');
 const syncSound = new Audio('https://actions.google.com/sounds/v1/cartoon/magic_chime_02.ogg');
+const chatSound = new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg');
 
 // ── HELPERS ──
 function getWeekDays(offset = 0) {
@@ -1649,11 +1681,18 @@ function renderPostsForDay(dayId, posts) {
     const noteHTML = post.note ? `<div class="post-note">${formatNote(post.note)}</div>` : '';
     const postIcon = post.authorIcon ? post.authorIcon : (post.author === 'حيدر محمد عبد الرحيم' ? 'صور/حيدر.png' : '');
     const authorIconHTML = postIcon ? `<img src="${postIcon}" class="author-badge" alt="شعار">` : '';
-    const adminActions = currentUser?.isAdmin ? `
-      <div class="post-actions">
-        ${!post.isOffline ? `<button class="btn-edit" onclick="openEditModal('${post.id}')">✏️ تعديل</button>` : ''}
-        <button class="btn-delete" onclick="${post.isOffline ? `deleteOfflinePostHandler(${post.id})` : `deletePost('${post.id}', ${JSON.stringify(post.mediaUrls || []).replace(/"/g,'&quot;')})`}">🗑️ حذف</button>
-      </div>` : '';
+    
+    let actionsHtml = '';
+    if (currentUser) {
+      actionsHtml += '<div class="post-actions">';
+      if (currentUser.isAdmin) {
+        actionsHtml += `${!post.isOffline ? `<button class="btn-edit" onclick="openEditModal('${post.id}')">✏️ تعديل</button>` : ''}`;
+        actionsHtml += `<button class="btn-delete" onclick="${post.isOffline ? `deleteOfflinePostHandler(${post.id})` : `deletePost('${post.id}', ${JSON.stringify(post.mediaUrls || []).replace(/"/g,'&quot;')})`}">🗑️ حذف</button>`;
+      } else {
+        actionsHtml += `<button class="btn-edit" style="color: #3b82f6; border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.1);" onclick="openEnquiryModal('${post.id}')">❓ استفسار</button>`;
+      }
+      actionsHtml += '</div>';
+    }
 
     item.innerHTML = `
       <span class="post-type-badge" data-type="${sanitizeText(post.type || '')}">${sanitizeText(post.type || '')}</span>
@@ -1662,7 +1701,7 @@ function renderPostsForDay(dayId, posts) {
       ${noteHTML}
       ${mediaHTML}
       <div class="post-author">بواسطة: <span style="color:${post.authorColor || '#aaa'}">${sanitizeText(post.author || '')}${authorIconHTML}</span></div>
-      ${adminActions}
+      ${actionsHtml}
     `;
     container.appendChild(item);
   });
@@ -1948,6 +1987,94 @@ window.downloadFileWithProgress = async function(url, filename, el, knownSize = 
   
   startDownload();
 };
+
+// ── ENQUIRY MODAL LOGIC ──
+window.openEnquiryModal = function(postId) {
+  if (!currentUser) return;
+  
+  let post = null;
+  Object.values(currentPosts).forEach(arr => {
+    const f = arr.find(p => p.id === postId);
+    if (f) post = f;
+  });
+  if (!post) {
+    const f = localOfflinePosts.find(p => p.id == postId);
+    if (f) post = f;
+  }
+  if (!post) return;
+
+  document.getElementById('enq-post-subject').value = post.subject;
+  document.getElementById('enq-post-day').value = post.dayId;
+  document.getElementById('enq-post-note').value = post.note || '';
+  document.getElementById('enq-post-type').value = post.type || 'تحضير';
+
+  document.getElementById('enq-subject-label').innerHTML = `<b>${sanitizeText(post.type || 'بخصوص')}:</b> ${sanitizeText(post.subject)}`;
+  document.getElementById('enq-note').value = '';
+  pendingFiles['enq-images'] = [];
+  document.getElementById('prev-enq-images').innerHTML = '';
+  openModal('enquiry-modal');
+};
+
+document.getElementById('btn-send-enquiry')?.addEventListener('click', async () => {
+  if (!currentUser) return;
+  const note = document.getElementById('enq-note').value.trim();
+  const subject = document.getElementById('enq-post-subject').value;
+  const dayId = document.getElementById('enq-post-day').value;
+  const postNote = document.getElementById('enq-post-note').value;
+  const postType = document.getElementById('enq-post-type').value;
+  const files = pendingFiles['enq-images'] || [];
+
+  if (!note && files.length === 0) {
+    showToast('⚠️', 'تنبيه', 'يرجى كتابة استفسارك أو إرفاق ملف');
+    return;
+  }
+
+  const btn = document.getElementById('btn-send-enquiry');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const uploadedUrls = [];
+    if (files.length > 0) {
+      showToast('⏳', 'جاري الرفع', 'يتم الان رفع المرفقات...');
+      for (let i = 0; i < files.length; i++) {
+        const url = await uploadToCloudinary(files[i]);
+        uploadedUrls.push(url);
+      }
+    }
+
+    await addDoc(collection(db, 'alfachats'), {
+      text: note,
+      postRef: {
+        dayId: dayId,
+        subject: subject,
+        note: postNote,
+        type: postType
+      },
+      imageUrls: uploadedUrls,
+      senderName: `سؤال طالب بخصوص ${postType || 'تحضير'}`,
+      senderColor: '#3b82f6', // لون أزرق مميز للاستفسارات لتمييزها في الدردشة
+      senderIcon: '',
+      createdAt: Date.now(),
+      edited: false,
+      readBy: []
+    });
+
+    showToast('✅', 'نجاح', 'تم إرسال استفسارك إلى ألفاشات');
+    closeModal('enquiry-modal');
+    
+    // فتح واجهة الدردشة تلقائياً ليتمكن الطالب من رؤية سؤاله ومتابعة الردود
+    if (!document.getElementById('alfachat-window').classList.contains('open')) {
+      toggleAlfachat();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('❌', 'خطأ', 'فشل إرسال الاستفسار، تأكد من الإنترنت');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🚀 إرسال الاستفسار للدردشة';
+  }
+});
 
 // ── TOGGLE DAY ──
 window.toggleDay = function(dayId) {
@@ -2463,6 +2590,11 @@ function playSyncSound() {
   syncSound.play().catch(e => console.warn('منع المتصفح تشغيل الصوت تلقائياً بسبب سياسة التفاعل'));
 }
 
+function playChatSound() {
+  chatSound.currentTime = 0;
+  chatSound.play().catch(e => console.warn('منع المتصفح تشغيل الصوت تلقائياً بسبب سياسة التفاعل'));
+}
+
 // ── NOTIFICATIONS ──
 function showToastNotif(n) {
   const msg = `${n.text} في ${formatDayName(n.dayId)}`;
@@ -2555,6 +2687,7 @@ function jumpToDay(dayId) {
     }
   }, 300);
 }
+window.jumpToDay = jumpToDay;
 
 document.getElementById('btn-notif').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -2806,6 +2939,7 @@ let pendingChatFiles = [];
 let typingUnsub = null;
 let chatTypingTimeout = null;
 let isChatTyping = false;
+let unreadMsgIdsCache = [];
 
 // ── MOBILE KEYBOARD & VIEWPORT FIX ──
 if (window.visualViewport) {
@@ -2851,8 +2985,14 @@ window.toggleAlfachat = function() {
   if (win.classList.contains('open')) {
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
-    subscribeToAlfachat();
     
+    const badge = document.querySelector('.chat-badge');
+    if (badge) badge.remove();
+
+    if (typeof markChatMessagesAsRead === 'function') {
+      markChatMessagesAsRead();
+    }
+
     // التمرير التلقائي للأسفل لضمان رؤية أحدث الرسائل فور الفتح
     setTimeout(() => {
       const chatMessagesEl = document.getElementById('chat-messages');
@@ -2886,6 +3026,31 @@ function subscribeToAlfachat() {
   );
 
   alfachatUnsub = onSnapshot(q, (snap) => {
+    let hasNewIncomingMessage = false;
+    let latestNewMsg = null;
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const msg = change.doc.data();
+        const myName = currentUser ? currentUser.name : null;
+        if (msg.senderName !== myName && (Date.now() - msg.createdAt < 10000)) {
+          hasNewIncomingMessage = true;
+          latestNewMsg = msg;
+        }
+      }
+    });
+
+    if (hasNewIncomingMessage && latestNewMsg) {
+      playChatSound();
+      const isChatOpen = document.getElementById('alfachat-window')?.classList.contains('open');
+      if (!isChatOpen) {
+        showToast('💬', `رسالة من ${latestNewMsg.senderName}`, latestNewMsg.text ? latestNewMsg.text : 'أرسل مرفقاً', toggleAlfachat);
+        const fab = document.getElementById('alfachat-fab');
+        if (fab && !fab.querySelector('.chat-badge')) {
+          fab.innerHTML += '<div class="chat-badge" style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border-radius:50%;border:2px solid var(--bg-primary);animation:pulseOpacity 1.5s infinite;"></div>';
+        }
+      }
+    }
+
     chatMessagesEl.innerHTML = '';
     if (snap.empty) {
       chatMessagesEl.innerHTML = '<div class="text-center" style="color:var(--text-muted);font-size:12px;margin-top:20px;">لا توجد رسائل حديثة. كُن أول من يرسل! 👋</div>';
@@ -2949,14 +3114,23 @@ function subscribeToAlfachat() {
     });
     
     // النزول لأسفل المحادثة تلقائياً عند استلام رسائل
-    setTimeout(() => { chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight; }, 100);
-
-    // إضافة المستخدم لقائمة القراء في الخلفية للرسائل التي لم يقرأها
-    unreadMsgIds.forEach(item => {
-      updateDoc(doc(db, 'alfachats', item.id), {
-        readBy: arrayUnion(item.readerName)
-      }).catch(() => {});
-    });
+    const isChatOpen = document.getElementById('alfachat-window')?.classList.contains('open');
+    if (isChatOpen) {
+      setTimeout(() => { chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight; }, 100);
+      unreadMsgIds.forEach(item => {
+        updateDoc(doc(db, 'alfachats', item.id), {
+          readBy: arrayUnion(item.readerName)
+        }).catch(() => {});
+      });
+    } else {
+      unreadMsgIdsCache = unreadMsgIds;
+      if (unreadMsgIds.length > 0) {
+        const fab = document.getElementById('alfachat-fab');
+        if (fab && !fab.querySelector('.chat-badge')) {
+          fab.innerHTML += '<div class="chat-badge" style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border-radius:50%;border:2px solid var(--bg-primary);animation:pulseOpacity 1.5s infinite;"></div>';
+        }
+      }
+    }
   });
 
   const typingQ = query(collection(db, 'alfachat_typing'), where('isTyping', '==', true));
@@ -2984,6 +3158,17 @@ function subscribeToAlfachat() {
   });
 }
 
+window.markChatMessagesAsRead = function() {
+  if (unreadMsgIdsCache && unreadMsgIdsCache.length > 0) {
+    unreadMsgIdsCache.forEach(item => {
+      updateDoc(doc(db, 'alfachats', item.id), {
+        readBy: arrayUnion(item.readerName)
+      }).catch(() => {});
+    });
+    unreadMsgIdsCache = [];
+  }
+}
+
 function renderChatMessage(msg, container, isContinuation = false, isLastInGroup = true) {
   const isMine = msg.senderName === currentUser?.name;
   
@@ -3005,6 +3190,15 @@ function renderChatMessage(msg, container, isContinuation = false, isLastInGroup
     replyHtml = `<div class="chat-reply-ref" onclick="scrollToChatMsg('${msg.replyTo.id}'); event.stopPropagation();">
       <div style="font-weight:bold; color:${isMine ? '#fff' : 'var(--accent2)'}; font-size:11px;">${sanitizeText(msg.replyTo.senderName)}</div>
       <div>${sanitizeText(msg.replyTo.text || 'صورة 🖼️')}</div>
+    </div>`;
+  }
+
+  let postRefHtml = '';
+  if (msg.postRef) {
+    const refType = msg.postRef.type ? sanitizeText(msg.postRef.type) : 'بخصوص';
+    postRefHtml = `<div class="chat-reply-ref" style="border-right-color: #f59e0b;" onclick="window.jumpToDay('${msg.postRef.dayId}'); toggleAlfachat(); event.stopPropagation();">
+      <div style="font-weight:bold; color:#f59e0b; font-size:11px; margin-bottom:2px;">📌 ${refType}: ${sanitizeText(msg.postRef.subject)}</div>
+      <div style="font-size:10px; opacity:0.8; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${sanitizeText(msg.postRef.note || 'بدون وصف')}</div>
     </div>`;
   }
 
@@ -3081,6 +3275,7 @@ function renderChatMessage(msg, container, isContinuation = false, isLastInGroup
     <div class="chat-msg ${msgBubbleClass}" id="chat-msg-${msg.id}">
       ${senderHtml}
       ${replyHtml}
+      ${postRefHtml}
       ${msg.text ? `<div class="chat-text">${formatChatText(msg.text)}</div>` : ''}
       ${imgHtml}
       <span class="chat-time">${statusHtml} ${timeStr}${editedStr}</span>
@@ -3305,6 +3500,8 @@ function init() {
   autoDeleteExpiredPosts();
   requestNotifPermission();
   refreshOfflinePosts();
+  
+  subscribeToAlfachat();
 
   // التوجيه التلقائي في حال تم فتح التطبيق من الإشعار
   const hash = window.location.hash;
