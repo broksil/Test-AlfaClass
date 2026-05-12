@@ -1123,7 +1123,7 @@
     <div class="chat-input-row">
       <button class="chat-attach-btn" onclick="document.getElementById('chat-file-input').click()">📎</button>
       <input type="file" id="chat-file-input" hidden accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple onchange="handleChatImageUpload(this)">
-      <textarea id="chat-input" class="chat-input" placeholder="اكتب رسالتك هنا..." rows="1" autocomplete="nope" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="handleChatTyping(); autoResizeChatInput(this);" onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChatMessage(); }"></textarea>
+      <textarea id="chat-input" class="chat-input" placeholder="اكتب رسالتك هنا..." rows="1" autocomplete="nope" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="handleChatTyping(); autoResizeChatInput(this);" onkeydown="if(event.key==='Enter' && !event.shiftKey && window.innerWidth > 768) { event.preventDefault(); sendChatMessage(); }"></textarea>
       <button class="chat-send-btn" onclick="sendChatMessage()">🚀</button>
     </div>
   </div>
